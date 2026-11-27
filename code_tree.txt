@@ -1,0 +1,19 @@
+typohub/
+├── app.py                     # Flask main entry, multi-page routes & API endpoints
+├── config.py                  # App settings, ad slot config & database config
+├── models.py                  # Optional user login & progress tracking models (SQLite / PostgreSQL)
+├── layouts/
+│   └── layout_engine.py       # Unified layout definitions (Kruti Dev, InScript/Mangal, Remington Gail, Vedmata, TypeScript)
+├── templates/
+│   ├── base.html              # Light default + Dark toggle, Guest-first nav, Optional Login, Right-side WhatsApp & Scroll-to-Top, Ad-safe slots
+│   ├── index.html             # Landing page: Guest-first CTA, live layout preview, features, optional login & ad-free note
+│   ├── learn.html             # Step-by-step guided learning & multi-day/level curriculum
+│   ├── games.html             # Beginner-friendly keyboard games (Guest mode ready)
+│   ├── practice.html          # Practice & Court/Govt Exam typing arena (timer, accuracy, backspace rules)
+│   └── login.html             # Optional student login / progress sync page
+└── static/
+    ├── css/
+    │   └── theme.css          # Design tokens (Light primary, Dark mode, responsive & ad-safe spacing)
+    └── js/
+        ├── theme-ui.js        # Theme toggle, scroll-to-top, guest session & UI helpers
+        └── keyboard-engine.js # Keystroke validation, visual keyboard & layout switcher

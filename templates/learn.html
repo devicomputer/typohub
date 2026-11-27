@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="th-section-head">
+  <div>
+    <h1 class="th-page-title">Guided Lessons</h1>
+    <p class="th-page-subtitle">Step-by-step drills with live next-key highlights and zero timer pressure.</p>
+  </div>
+  <div class="th-toolbar-group">
+    <label for="learn-layout-select" style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">LAYOUT</label>
+    <select id="learn-layout-select" class="th-select">
+      {% for item in available_layouts %}
+        <option value="{{ item.id }}" {% if initial_layout == item.id %}selected{% endif %}>{{ item.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</div>
+
+<!-- Lesson Selector Bar -->
+<div class="th-toolbar">
+  <div id="lesson-tabs" class="th-toolbar-group">
+    <button type="button" class="th-btn th-btn-primary lesson-pill" data-lesson="0">1. Home Row</button>
+    <button type="button" class="th-btn lesson-pill" data-lesson="1">2. Top Row &amp; Vowels</button>
+    <button type="button" class="th-btn lesson-pill" data-lesson="2">3. Short Words</button>
+    <button type="button" class="th-btn lesson-pill" data-lesson="3">4. Fluency Drill</button>
+  </div>
+  <div class="th-toolbar-group">
+    <button type="button" id="learn-reset-btn" class="th-btn">Restart Lesson</button>
+    <button type="button" id="learn-next-btn" class="th-btn th-btn-primary">Next Lesson &rarr;</button>
+  </div>
+</div>
+
+<!-- Lesson Info Strip -->
+<div class="th-kpi-strip" style="grid-template-columns: repeat(4, minmax(0, 1fr));">
+  <div class="th-kpi-box">
+    <span class="th-kpi-label">Current Lesson</span>
+    <span id="learn-lesson-num" class="th-kpi-value accent">1 / 4</span>
+  </div>
+  <div class="th-kpi-box">
+    <span class="th-kpi-label">Progress</span>
+    <span id="learn-progress-pct" class="th-kpi-value">0%</span>
+  </div>
+  <div class="th-kpi-box">
+    <span class="th-kpi-label">Accuracy</span>
+    <span id="learn-accuracy" class="th-kpi-value good">100%</span>
+  </div>
+  <div class="th-kpi-box">
+    <span class="th-kpi-label">Status</span>
+    <span id="learn-status-val" class="th-kpi-value" style="font-size:1rem;">In Progress</span>
+  </div>
+</div>
+
+<!-- Interactive Lesson Typing Canvas -->
+<div id="learn-canvas" class="th-typing-canvas" tabindex="0">
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;">
+    <strong id="learn-lesson-title" style="font-size:1rem;">Lesson 1: Home Row Foundations</strong>
+    <span id="learn-lesson-tip" style="font-size:0.84rem; color:var(--text-secondary);">Rest your fingers on Home Row and follow the highlighted key below.</span>
+  </div>
+
+  <div id="learn-stream" class="th-text-stream"></div>
+
+  <div class="th-progress-track">
+    <div id="learn-progress-fill" class="th-progress-fill"></div>
+  </div>
+</div>
+
+<!-- Visual Guide Keyboard -->
+<div class="th-kb-shell">
+  <div class="th-kb-head">
+    <span><strong style="color:var(--text);">Interactive Key Guide</strong> &middot; Highlighted key shows your exact next keystroke</span>
+    <span>Blue = Next Key &middot; Amber = Hold Shift</span>
+  </div>
+  <div id="learn-keyboard" class="th-kb-rows"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/keyboard-engine.js') }}"></script>
+<script>
+(function () {
+  const api = window.TypoHubLayouts;
+  if (!api) return;
+
+  const LESSONS = {
+    krutidev: [
+      { title: "Lesson 1: Home Row Foundations", tip: "Focus on A, S, D, F and J, K, L, ; key positions.", text: "क े ि र ा स य क ि र ा स" },
+      { title: "Lesson 2: Matras & Core Vowels", tip: "Build rhythm with common matras and consonants.", text: "का के कि की कत कल कर कम कस" },
+      { title: "Lesson 3: Everyday Two-Letter Words", tip: "Keep your eyes on the screen instead of your fingers.", text: "कल मन घर जल फल रत नल वन" },
+      { title: "Lesson 4: Combined Flow Drill", tip: "Maintain steady accuracy across mixed letter rows.", text: "कदम नगर सरल मटर गगन बदन" }
+    ],
+    inscript: [
+      { title: "Lesson 1: InScript Core Consonants", tip: "Practice standard Unicode Mangal consonant keys.", text: "क त र प च क त र प च" },
+      { title: "Lesson 2: Vowel Signs (Matras)", tip: "Combine left-hand matras with right-hand consonants.", text: "का के कि की को कु कत कर" },
+      { title: "Lesson 3: Short Hindi Words", tip: "Type smoothly with steady spacing between words.", text: "कल मन घर जल फल पल बल सर" },
+      { title: "Lesson 4: Exam Warm-up Drill", tip: "Aim for 95%+ accuracy before increasing speed.", text: "भारत देश सरल कदम नगर गगन" }
+    ],
+    remington_gail: [
+      { title: "Lesson 1: Remington Gail Home Row", tip: "Master the base row used in Court and Ubuntu exams.", text: "क े ि र ा स य क े ि र ा" },
+      { title: "Lesson 2: Matra Combinations", tip: "Practice pairing vowels with common consonants.", text: "का के कि की कत कल कर कम" },
+      { title: "Lesson 3: Court Vocabulary Basics", tip: "Build clean accuracy on formal Hindi terms.", text: "वाद पत्र आदेश नियम सरल कदम" },
+      { title: "Lesson 4: Steady Rhythm Passage", tip: "Keep even timing across every word.", text: "नियम सरल कलम नगर पवन गगन" }
+    ],
+    vedmata: [
+      { title: "Lesson 1: Vedmata Vowels & Consonants", tip: "Learn core vowel and consonant key positions.", text: "अ इ उ ए ओ क ग त द प ब" },
+      { title: "Lesson 2: Shifted Pair Drills", tip: "Hold Shift cleanly for aspirated characters.", text: "आ ई ऊ ऐ औ ख घ थ ध फ भ" },
+      { title: "Lesson 3: Short Word Building", tip: "Practice steady spacing and accuracy.", text: "कल बल पल घर जल मन रमन नमन" },
+      { title: "Lesson 4: Mixed Row Fluency", tip: "Maintain high accuracy without rushing.", text: "अमर सरल पवन गगन नगर कदम" }
+    ],
+    typescript: [
+      { title: "Lesson 1: TypeScript Core Keys", tip: "Get familiar with primary phonetic key placements.", text: "क ग त द न प ब म र ल व स" },
+      { title: "Lesson 2: Matra & Vowel Keys", tip: "Practice combining matras smoothly.", text: "का के कि को कु गा गे गो ता ते" },
+      { title: "Lesson 3: Daily Word Practice", tip: "Type clean two and three-letter words.", text: "काम नाम दाम राम कल पल बल" },
+      { title: "Lesson 4: Fluency Check", tip: "Complete the drill with minimal mistakes.", text: "सरल कदम नगर पवन गगन मनन" }
+    ]
+  };
+
+  const layoutSelect = document.getElementById("learn-layout-select");
+  const pills = document.querySelectorAll(".lesson-pill");
+  const titleEl = document.getElementById("learn-lesson-title");
+  const tipEl = document.getElementById("learn-lesson-tip");
+  const streamEl = document.getElementById("learn-stream");
+  const canvasEl = document.getElementById("learn-canvas");
+  const kbEl = document.getElementById("learn-keyboard");
+  const numEl = document.getElementById("learn-lesson-num");
+  const pctEl = document.getElementById("learn-progress-pct");
+  const accEl = document.getElementById("learn-accuracy");
+  const statusEl = document.getElementById("learn-status-val");
+  const fillEl = document.getElementById("learn-progress-fill");
+  const resetBtn = document.getElementById("learn-reset-btn");
+  const nextBtn = document.getElementById("learn-next-btn");
+
+  let lessonIdx = 0;
+  let cursor = 0;
+  let totalKeys = 0;
+  let correctKeys = 0;
+  let targetText = "";
+
+  function currentLesson() {
+    const set = LESSONS[layoutSelect.value] || LESSONS.krutidev;
+    return set[lessonIdx % set.length];
+  }
+
+  function renderStream() {
+    streamEl.innerHTML = "";
+    for (let i = 0; i < targetText.length; i++) {
+      const span = document.createElement("span");
+      span.className = "th-char";
+      if (i < cursor) span.classList.add("correct");
+      else if (i === cursor) span.classList.add("active");
+      span.textContent = targetText[i];
+      streamEl.appendChild(span);
+    }
+
+    const pct = targetText.length ? Math.round((cursor / targetText.length) * 100) : 0;
+    pctEl.textContent = pct + "%";
+    fillEl.style.width = pct + "%";
+    const acc = totalKeys > 0 ? Math.round((correctKeys / totalKeys) * 100) : 100;
+    accEl.textContent = acc + "%";
+    statusEl.textContent = cursor >= targetText.length ? "Completed" : "In Progress";
+
+    const nextChar = targetText[cursor] || "";
+    api.highlightNextChar(kbEl, layoutSelect.value, nextChar);
+  }
+
+  function loadLesson() {
+    const l = currentLesson();
+    targetText = l.text;
+    cursor = 0;
+    totalKeys = 0;
+    correctKeys = 0;
+    titleEl.textContent = l.title;
+    tipEl.textContent = l.tip;
+    numEl.textContent = `${lessonIdx + 1} / 4`;
+
+    pills.forEach((p, idx) => {
+      p.classList.toggle("th-btn-primary", idx === lessonIdx);
+    });
+
+    api.renderKeyboard(kbEl, layoutSelect.value, function (ch) {
+      handleChar(ch, null);
+    });
+    renderStream();
+    canvasEl.focus();
+  }
+
+  function handleChar(typedChar, code) {
+    if (cursor >= targetText.length) return;
+    totalKeys += 1;
+    const expected = targetText[cursor];
+    if (typedChar === expected) {
+      correctKeys += 1;
+      cursor += 1;
+      api.playClick(true);
+      api.flashKey(kbEl, code, true);
+      renderStream();
+      if (cursor >= targetText.length) {
+        window.showTypoToast && window.showTypoToast("Lesson completed! Great accuracy.");
+        fetch("/api/progress", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            section: "learn",
+            layout_id: layoutSelect.value,
+            level_or_set: `lesson_${lessonIdx + 1}`,
+            wpm: 0,
+            accuracy: totalKeys > 0 ? Math.round((correctKeys / totalKeys) * 100) : 100,
+            typed_chars: targetText.length,
+            completed: true
+          })
+        }).catch(() => {});
+      }
+    } else {
+      api.playClick(false);
+      api.flashKey(kbEl, code, false);
+      renderStream();
+    }
+  }
+
+  canvasEl.addEventListener("focus", () => canvasEl.classList.add("focused"));
+  canvasEl.addEventListener("blur", () => canvasEl.classList.remove("focused"));
+
+  window.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    if (document.activeElement && document.activeElement.tagName === "SELECT") return;
+    if (e.key === "Shift") return;
+
+    if (e.code === "Space") {
+      e.preventDefault();
+      handleChar(" ", "Space");
+      return;
+    }
+
+    const mapped = api.mapKey(layoutSelect.value, e.code, e.shiftKey);
+    if (mapped) {
+      e.preventDefault();
+      handleChar(mapped, e.code);
+    }
+  });
+
+  pills.forEach((p) => {
+    p.addEventListener("click", () => {
+      lessonIdx = Number(p.dataset.lesson) || 0;
+      loadLesson();
+    });
+  });
+
+  layoutSelect.addEventListener("change", () => {
+    lessonIdx = 0;
+    loadLesson();
+  });
+
+  resetBtn.addEventListener("click", loadLesson);
+  nextBtn.addEventListener("click", () => {
+    lessonIdx = (lessonIdx + 1) % 4;
+    loadLesson();
+  });
+
+  loadLesson();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,1263 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+  .game-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+
+  .game-breadcrumb {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .game-title-block h1 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .game-title-block span {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  /* GAME 1: NITRO TYPE GP */
+  .race-track-card {
+    position: relative;
+    background: #141a26;
+    border: 1px solid #263147;
+    border-radius: 18px;
+    padding: 18px 20px 14px;
+    color: #f8fafc;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 16px;
+  }
+
+  .race-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+    font-size: 0.8rem;
+  }
+
+  .race-rank-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(59, 130, 246, 0.45);
+    color: #93c5fd;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .race-lanes {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-right: 26px;
+  }
+
+  .race-finish-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 26px;
+    width: 14px;
+    background-image:
+      linear-gradient(45deg, #ffffff 25%, transparent 25%),
+      linear-gradient(-45deg, #ffffff 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #ffffff 75%),
+      linear-gradient(-45deg, transparent 75%, #ffffff 75%);
+    background-size: 10px 10px;
+    background-position: 0 0, 0 5px, 5px -5px, -5px 0;
+    background-color: #0f172a;
+    border-left: 1px solid rgba(255,255,255,0.25);
+    border-right: 1px solid rgba(255,255,255,0.25);
+    opacity: 0.9;
+    z-index: 2;
+  }
+
+  .race-lane {
+    position: relative;
+    height: 48px;
+    border-radius: 10px;
+    background: #1e2638;
+    border: 1px solid #2d3850;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    overflow: hidden;
+  }
+
+  .race-lane.player-lane {
+    background: linear-gradient(90deg, rgba(37, 99, 235, 0.22), #1e2638 45%);
+    border-color: rgba(59, 130, 246, 0.55);
+  }
+
+  .race-lane::after {
+    content: "";
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    top: 50%;
+    border-top: 2px dashed rgba(148, 163, 184, 0.2);
+    z-index: 1;
+  }
+
+  .racer-meta {
+    position: relative;
+    z-index: 3;
+    width: 112px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+  }
+
+  .racer-name { font-size: 0.78rem; font-weight: 800; color: #f8fafc; }
+  .racer-speed { font-size: 0.68rem; font-family: 'JetBrains Mono', monospace; color: #94a3b8; }
+
+  .race-track-rail {
+    position: relative;
+    flex: 1;
+    height: 100%;
+    z-index: 3;
+    margin-right: 24px;
+  }
+
+  .race-car {
+    position: absolute;
+    top: 50%;
+    left: 0%;
+    transform: translateY(-50%);
+    transition: left 0.16s linear;
+    display: inline-flex;
+    align-items: center;
+    z-index: 4;
+  }
+
+  .nitro-flame {
+    width: 0;
+    height: 10px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent, #f59e0b, #38bdf8);
+    margin-right: -4px;
+    opacity: 0;
+    transition: all 0.15s ease;
+  }
+
+  .race-car.boosting .nitro-flame {
+    width: 24px;
+    opacity: 1;
+    filter: drop-shadow(0 0 6px #38bdf8);
+  }
+
+  .race-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(9, 13, 22, 0.82);
+    backdrop-filter: blur(5px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    z-index: 10;
+    text-align: center;
+    padding: 20px;
+  }
+
+  .race-overlay[hidden] { display: none; }
+
+  .countdown-digit {
+    font-size: 3.4rem;
+    font-weight: 900;
+    font-family: 'JetBrains Mono', monospace;
+    color: #38bdf8;
+    text-shadow: 0 0 28px rgba(56, 189, 248, 0.55);
+  }
+
+  /* GAME 2: METEOR DEFENSE */
+  .space-stage {
+    position: relative;
+    height: 360px;
+    border-radius: 18px;
+    background: radial-gradient(circle at 50% 100%, #172554 0%, #0b1120 65%, #050811 100%);
+    border: 1px solid #1e293b;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 16px;
+    color: #f8fafc;
+  }
+
+  .space-hud {
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 6;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  .space-hearts { display: inline-flex; gap: 6px; color: #fb7185; font-size: 1rem; }
+
+  .meteor-node {
+    position: absolute;
+    transform: translateX(-50%);
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.92);
+    border: 1.5px solid #475569;
+    font-family: 'Noto Sans Devanagari', sans-serif;
+    font-size: 1.18rem;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+    z-index: 4;
+  }
+
+  .meteor-node.locked {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25), 0 0 20px rgba(56, 189, 248, 0.4);
+  }
+
+  .meteor-done { color: #10b981; }
+  .meteor-next { color: #38bdf8; text-decoration: underline; }
+  .meteor-rest { color: #f8fafc; }
+
+  .space-turret {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 56px;
+    height: 36px;
+    border-radius: 14px 14px 6px 6px;
+    background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+    border: 1px solid #93c5fd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 24px rgba(59, 130, 246, 0.55);
+    z-index: 5;
+  }
+
+  .space-laser-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  /* GAME 3: SPEED TUG-OF-WAR */
+  .tug-arena {
+    position: relative;
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 16px;
+  }
+
+  .tug-labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 800;
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+  }
+
+  .tug-bar-shell {
+    position: relative;
+    height: 34px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(37, 99, 235, 0.2), var(--bg-subtle) 50%, rgba(225, 29, 72, 0.2));
+    border: 1px solid var(--border-strong);
+    overflow: hidden;
+  }
+
+  .tug-fill-player {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    background: linear-gradient(90deg, #2563eb, #38bdf8);
+    transition: width 0.14s ease-out;
+  }
+
+  .tug-center-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    background: var(--text);
+    opacity: 0.3;
+  }
+
+  .tug-knot {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 4px solid #0f172a;
+    box-shadow: 0 0 14px rgba(37, 99, 235, 0.5);
+    transition: left 0.14s ease-out;
+    z-index: 4;
+  }
+
+  .tug-word-stage { margin-top: 22px; text-align: center; }
+
+  .tug-active-word {
+    display: inline-flex;
+    padding: 18px 34px;
+    border-radius: 16px;
+    background: var(--bg-subtle);
+    border: 2px solid var(--primary);
+    font-family: 'Noto Sans Devanagari', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  @media (max-width: 720px) {
+    .racer-meta { width: 84px; }
+  }
+</style>
+
+<!-- Distraction-Free Top Bar -->
+<div class="game-topbar">
+  <div class="game-breadcrumb">
+    <a href="/games?layout={{ initial_layout }}" class="th-btn" id="back-to-games-link">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7"></path>
+      </svg>
+      <span>All Games</span>
+    </a>
+    <div class="game-title-block">
+      <h1>{{ game.title }}</h1>
+      <span>{{ game.category }} &middot; {{ game.skill }}</span>
+    </div>
+  </div>
+
+  <div class="th-toolbar-group">
+    <select id="arcade-layout-select" class="th-select" aria-label="Keyboard Layout">
+      {% for item in available_layouts %}
+        <option value="{{ item.id }}" {% if initial_layout == item.id %}selected{% endif %}>{{ item.name }}</option>
+      {% endfor %}
+    </select>
+
+    <select id="arcade-difficulty-select" class="th-select" aria-label="Bot Difficulty">
+      <option value="rookie">Rookie</option>
+      <option value="pro" selected>Pro</option>
+      <option value="champion">Champion</option>
+    </select>
+
+    <button type="button" id="arcade-kb-toggle" class="th-btn">Hide Key Guide</button>
+  </div>
+</div>
+
+<!-- Render ONLY the selected game -->
+{% if game.slug == 'nitro-race' %}
+<section id="panel-race">
+  <div class="th-kpi-strip" style="grid-template-columns: repeat(4, minmax(0, 1fr));">
+    <div class="th-kpi-box">
+      <span class="th-kpi-label">Live Speed</span>
+      <span id="race-wpm" class="th-kpi-value accent">0 WPM</span>
+    </div>
+    <div class="th-kpi-box">
+      <span class="th-kpi-label">Accuracy</span>
+      <span id="race-acc" class="th-kpi-value good">100%</span>
+    </div>
+    <div class="th-kpi-box">
+      <span class="th-kpi-label">Position</span>
+      <span id="race-pos" class="th-kpi-value warn">1st / 4</span>
+    </div>
+    <div class="th-kpi-box">
+      <span class="th-kpi-label">Nitro Streak</span>
+      <span id="race-streak" class="th-kpi-value">0x</span>
+    </div>
+  </div>
+
+  <div class="race-track-card">
+    <div class="race-header">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="race-rank-pill" id="race-status-pill">READY TO RACE</span>
+        <span style="color:#94a3b8;" id="race-layout-badge">Kruti Dev (010)</span>
+      </div>
+      <button type="button" id="race-start-btn" class="th-btn th-btn-primary" style="padding:6px 14px;">Start Race</button>
+    </div>
+
+    <div class="race-lanes">
+      <div class="race-finish-line" aria-hidden="true"></div>
+
+      <div class="race-lane player-lane">
+        <div class="racer-meta">
+          <span class="racer-name">YOU (Player)</span>
+          <span class="racer-speed" id="racer-speed-0">0 WPM</span>
+        </div>
+        <div class="race-track-rail">
+          <div class="race-car" id="car-0">
+            <span class="nitro-flame"></span>
+            <svg width="54" height="26" viewBox="0 0 60 28" fill="none">
+              <rect x="4" y="4" width="50" height="20" rx="8" fill="#2563eb" stroke="#93c5fd" stroke-width="1.5"/>
+              <rect x="20" y="7" width="16" height="14" rx="4" fill="#0f172a"/>
+              <rect x="48" y="6" width="5" height="5" rx="1.5" fill="#fef08a"/>
+              <rect x="48" y="17" width="5" height="5" rx="1.5" fill="#fef08a"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="race-lane">
+        <div class="racer-meta">
+          <span class="racer-name" style="color:#fca5a5;">Turbo AI</span>
+          <span class="racer-speed" id="racer-speed-1">0 WPM</span>
+        </div>
+        <div class="race-track-rail">
+          <div class="race-car" id="car-1">
+            <svg width="52" height="24" viewBox="0 0 60 28" fill="none">
+              <rect x="4" y="4" width="50" height="20" rx="8" fill="#e11d48" stroke="#fda4af" stroke-width="1.5"/>
+              <rect x="20" y="7" width="16" height="14" rx="4" fill="#0f172a"/>
+              <rect x="48" y="6" width="4" height="5" rx="1.5" fill="#fef08a"/>
+              <rect x="48" y="17" width="4" height="5" rx="1.5" fill="#fef08a"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="race-lane">
+        <div class="racer-meta">
+          <span class="racer-name" style="color:#fcd34d;">Swift Bot</span>
+          <span class="racer-speed" id="racer-speed-2">0 WPM</span>
+        </div>
+        <div class="race-track-rail">
+          <div class="race-car" id="car-2">
+            <svg width="52" height="24" viewBox="0 0 60 28" fill="none">
+              <rect x="4" y="4" width="50" height="20" rx="8" fill="#d97706" stroke="#fde68a" stroke-width="1.5"/>
+              <rect x="20" y="7" width="16" height="14" rx="4" fill="#0f172a"/>
+              <rect x="48" y="6" width="4" height="5" rx="1.5" fill="#fef08a"/>
+              <rect x="48" y="17" width="4" height="5" rx="1.5" fill="#fef08a"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="race-lane">
+        <div class="racer-meta">
+          <span class="racer-name" style="color:#c4b5fd;">Apex Bot</span>
+          <span class="racer-speed" id="racer-speed-3">0 WPM</span>
+        </div>
+        <div class="race-track-rail">
+          <div class="race-car" id="car-3">
+            <svg width="52" height="24" viewBox="0 0 60 28" fill="none">
+              <rect x="4" y="4" width="50" height="20" rx="8" fill="#7c3aed" stroke="#ddd6fe" stroke-width="1.5"/>
+              <rect x="20" y="7" width="16" height="14" rx="4" fill="#0f172a"/>
+              <rect x="48" y="6" width="4" height="5" rx="1.5" fill="#fef08a"/>
+              <rect x="48" y="17" width="4" height="5" rx="1.5" fill="#fef08a"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="race-overlay" id="race-overlay" hidden>
+      <div id="race-overlay-title" class="countdown-digit">3</div>
+      <div id="race-overlay-sub" style="font-size:0.95rem; color:#cbd5e1; max-width:440px;">Fingers ready on Home Row...</div>
+      <button type="button" id="race-overlay-btn" class="th-btn th-btn-primary" style="display:none; margin-top:6px;">Race Again &rarr;</button>
+    </div>
+  </div>
+
+  <div id="race-canvas" class="th-typing-canvas" tabindex="0">
+    <div id="race-stream" class="th-text-stream"></div>
+    <div class="th-progress-track">
+      <div id="race-progress-fill" class="th-progress-fill"></div>
+    </div>
+    <div class="th-canvas-footer">
+      <span>Press <strong>Start Race</strong> or begin typing to trigger the 3-2-1 countdown.</span>
+      <span>10+ combo activates Nitro Boost</span>
+    </div>
+  </div>
+</section>
+
+{% elif game.slug == 'meteor-defense' %}
+<section id="panel-meteor">
+  <div class="th-kpi-strip" style="grid-template-columns: repeat(4, minmax(0, 1fr));">
+    <div class="th-kpi-box">
+      <span class="th-kpi-label">Score</span>
+      <span id="meteor-score" class="th-kpi-value accent">0</span>
+    </div>
+    <div class="th-kpi-box">
+      <span class="th-kpi-label">Wave</span>
+      <span id="meteor-wave" class="th-kpi-value warn">1</span>
+    </div>
+    <div class="th-kpi-box">
+      <span class="th-kpi-label">Destroyed</span>
+      <span id="meteor-kills" class="th-kpi-value good">0</span>
+    </div>
+    <div class="th-kpi-box">
+      <span class="th-kpi-label">Accuracy</span>
+      <span id="meteor-acc" class="th-kpi-value">100%</span>
+    </div>
+  </div>
+
+  <div class="space-stage" id="meteor-stage">
+    <div class="space-hud">
+      <div class="space-hearts" id="meteor-hearts">&#10084; &#10084; &#10084;</div>
+      <button type="button" id="meteor-start-btn" class="th-btn th-btn-primary" style="padding:5px 13px;">Launch Defense</button>
+    </div>
+
+    <svg class="space-laser-svg" id="meteor-laser-svg"></svg>
+    <div id="meteor-layer"></div>
+
+    <div class="space-turret" aria-hidden="true">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 19 21 12 17 5 21 12 2"></polygon>
+      </svg>
+    </div>
+
+    <div class="race-overlay" id="meteor-overlay">
+      <div id="meteor-overlay-title" style="font-size:1.75rem; font-weight:800; color:#ffffff;">Meteor Defense</div>
+      <div id="meteor-overlay-sub" style="font-size:0.9rem; color:#cbd5e1; max-width:420px;">
+        Type falling Hindi words before they breach your shield. Your turret auto-locks on the first matching letter.
+      </div>
+      <button type="button" id="meteor-overlay-btn" class="th-btn th-btn-primary" style="margin-top:6px;">Start Wave 1 &rarr;</button>
+    </div>
+  </div>
+</section>
+
+{% elif game.slug == 'tug-of-war' %}
+<section id="panel-tug">
+  <div class="th-kpi-strip" style="grid-template-columns: repeat(4, minmax(0, 1fr));">
+    <div class="th-kpi-box">
+      <span class="th-kpi-label">Pull Meter</span>
+      <span id="tug-meter-val" class="th-kpi-value accent">50%</span>
+    </div>
+    <div class="th-kpi-box">
+      <span class="th-kpi-label">Words Cleared</span>
+      <span id="tug-words-val" class="th-kpi-value good">0</span>
+    </div>
+    <div class="th-kpi-box">
+      <span class="th-kpi-label">Streak</span>
+      <span id="tug-streak-val" class="th-kpi-value warn">0x</span>
+    </div>
+    <div class="th-kpi-box">
+      <span class="th-kpi-label">Wins</span>
+      <span id="tug-wins-val" class="th-kpi-value">0</span>
+    </div>
+  </div>
+
+  <div class="tug-arena">
+    <div class="tug-labels">
+      <span style="color:var(--primary);">YOU (Pull to 100%)</span>
+      <button type="button" id="tug-start-btn" class="th-btn th-btn-primary" style="padding:5px 14px;">Start Duel</button>
+      <span style="color:var(--rose);">RIVAL BOT</span>
+    </div>
+
+    <div class="tug-bar-shell">
+      <div class="tug-fill-player" id="tug-fill"></div>
+      <div class="tug-center-line"></div>
+      <div class="tug-knot" id="tug-knot"></div>
+    </div>
+
+    <div class="tug-word-stage">
+      <div id="tug-queue" style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-bottom:14px;"></div>
+      <div class="tug-active-word" id="tug-active-word">कल</div>
+      <p id="tug-status-text" style="margin:14px 0 0; font-size:0.86rem; color:var(--text-secondary);">
+        Press <strong>Start Duel</strong> or start typing—don't let the AI drag the knot across your line!
+      </p>
+    </div>
+
+    <div class="race-overlay" id="tug-overlay" hidden>
+      <div id="tug-overlay-title" style="font-size:1.9rem; font-weight:900; color:#ffffff;">Victory!</div>
+      <div id="tug-overlay-sub" style="font-size:0.94rem; color:#cbd5e1;"></div>
+      <button type="button" id="tug-overlay-btn" class="th-btn th-btn-primary" style="margin-top:6px;">Rematch &rarr;</button>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- Shared Visual Keyboard Assist -->
+<div class="th-kb-shell" id="arcade-kb-shell">
+  <div class="th-kb-head">
+    <span><strong style="color:var(--text);">Live Key Guide</strong> &middot; Blue = Next Key &middot; Amber = Hold Shift</span>
+    <span id="arcade-kb-layout-name">Kruti Dev (010)</span>
+  </div>
+  <div id="arcade-keyboard" class="th-kb-rows"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/keyboard-engine.js') }}"></script>
+<script>
+(function () {
+  const api = window.TypoHubLayouts;
+  if (!api) return;
+
+  const ACTIVE_GAME = "{{ game.slug }}";
+
+  const CONTENT = {
+    krutidev: {
+      passages: [
+        "कमल सरल नगर पवन गगन जल नल वन मन कर सर कदम बदन समय गरम नरम चमन हवन रमन नमन काम नाम दाम राम पान मान कान जान",
+        "दिन गिन सिर मिल दिल बिल तिल गीत मीत जीत रीत नीर वीर तीर कुल पुल तुम सुन गुन चुन मेला केला सेवा देवा सेना लेना देना",
+        "कलम धरम करम परम जनम सनम वतन जतन रतन मदन सदन गमन दमन नयन चयन बहार करार सलाम मकान दुकान किसान जवान महान समान विमान"
+      ],
+      words: ["कल", "मन", "जल", "नल", "वन", "कर", "सर", "कमल", "सरल", "नगर", "पवन", "गगन", "कदम", "समय", "काम", "नाम", "दाम", "राम", "दिन", "दिल", "गीत", "जीत", "वीर", "कुल", "पुल", "मेला", "सेवा", "नेता", "पैसा", "वतन", "रतन", "मकान", "किसान", "जवान", "महान"]
+    },
+    inscript: {
+      passages: [
+        "भारत एक विशाल देश है। नियमित अभ्यास से गति और शुद्धता दोनों बढ़ती हैं। सरल कदम नगर पवन गगन कमल समय गरम नरम",
+        "काम नाम दाम राम पान मान कान जान दिन गिन सिर मिल दिल गीत मीत जीत रीत नीर वीर तीर कुल पुल तुम सुन मेला केला सेवा",
+        "परीक्षा में शांत मन और सटीक उंगलियों का संतुलन सबसे आवश्यक है। हर दिन दस मिनट अभ्यास करने से आपकी गति निरंतर बढ़ेगी।"
+      ],
+      words: ["कल", "मन", "घर", "जल", "फल", "कमल", "सरल", "नगर", "पवन", "गगन", "कदम", "समय", "भारत", "देश", "काम", "नाम", "राम", "दिन", "दिल", "गीत", "जीत", "वीर", "मेला", "सेवा", "नेता", "कोमल", "सफल", "मकान", "किसान", "जवान", "महान"]
+    },
+    remington_gail: {
+      passages: [
+        "कमल सरल नगर पवन गगन जल नल वन मन कर सर कदम बदन समय गरम नरम चमन हवन रमन नमन काम नाम दाम राम पान मान कान जान",
+        "कलम धरम करम परम जनम सनम वतन जतन रतन मदन सदन गमन दमन नयन चयन बहार करार सलाम मकान दुकान किसान जवान महान समान विमान",
+        "दिन गिन सिर मिल दिल बिल तिल गीत मीत जीत रीत नीर वीर तीर कुल पुल तुम सुन गुन चुन मेला केला सेवा देवा सेना लेना देना"
+      ],
+      words: ["कल", "मन", "जल", "नल", "वन", "कर", "सर", "कमल", "सरल", "नगर", "पवन", "गगन", "कदम", "समय", "काम", "नाम", "दाम", "राम", "दिन", "दिल", "गीत", "जीत", "वीर", "कुल", "पुल", "मेला", "सेवा", "नेता", "पैसा", "वतन", "रतन", "मकान", "किसान", "जवान", "महान"]
+    },
+    vedmata: {
+      passages: [
+        "कल मन बल पल घर जल फल नल वन कर सर पर तर दर नर सरल कदम नगर पवन गगन अमर रमन नमन बदन समय गरम नरम हवन कलम",
+        "धरम करम परम वतन रतन मदन सदन गमन दमन नयन पहल महल लहर शहर खबर सफर मगर अगर असर बसर भवन भगत खत रथ पथ थल धन घन",
+        "कम दम गम हम सब कब तब अब सरल कदम नगर पवन गगन अमर रमन नमन समय गरम नरम हवन कलम वतन रतन मदन सदन नयन महल लहर"
+      ],
+      words: ["कल", "मन", "बल", "पल", "घर", "जल", "फल", "नल", "वन", "कर", "सर", "सरल", "कदम", "नगर", "पवन", "गगन", "अमर", "रमन", "नमन", "बदन", "समय", "गरम", "नरम", "हवन", "कलम", "वतन", "रतन", "मदन", "सदन", "नयन", "महल", "लहर", "शहर", "खबर", "सफर", "भवन"]
+    },
+    typescript: {
+      passages: [
+        "काम नाम दाम राम शाम पान मान कान बात रात सात हाथ साथ काका मामा दादा नाना दिन गिन सिर मिल दिल बिल तिल कुल पुल तुम सुन",
+        "मेला केला सेवा देवा सेना लेना देना नेता बोल गोल मोल तोल रोना सोना खोना होना धोना कोना लोहा सोहन मोहन रोहन कोमल सरल कदम",
+        "सरल कदम नगर पवन गगन घर फल मन बल पल काम नाम दाम राम शाम दिन गिन मिल दिल कुल पुल तुम सुन मेला सेवा नेता कोमल रोहन"
+      ],
+      words: ["काम", "नाम", "दाम", "राम", "शाम", "पान", "मान", "बात", "रात", "सात", "हाथ", "साथ", "दिन", "दिल", "मिल", "कुल", "पुल", "तुम", "सुन", "मेला", "सेवा", "नेता", "बोल", "गोल", "सोना", "होना", "मोहन", "रोहन", "कोमल", "सरल", "कदम", "नगर", "पवन", "गगन"]
+    }
+  };
+
+  const BOT_SPEEDS = { rookie: [16, 20, 25], pro: [28, 35, 42], champion: [44, 52, 62] };
+  const TUG_PULL_PER_SEC = { rookie: 4.5, pro: 7.5, champion: 11.2 };
+  const METEOR_SPEED = { rookie: 0.42, pro: 0.65, champion: 0.92 };
+
+  const layoutSelect = document.getElementById("arcade-layout-select");
+  const diffSelect = document.getElementById("arcade-difficulty-select");
+  const kbToggleBtn = document.getElementById("arcade-kb-toggle");
+  const kbShell = document.getElementById("arcade-kb-shell");
+  const kbEl = document.getElementById("arcade-keyboard");
+  const kbLayoutName = document.getElementById("arcade-kb-layout-name");
+  const backLink = document.getElementById("back-to-games-link");
+
+  let kbVisible = true;
+  let onTypedChar = function () {};
+  let onBackspace = function () {};
+  let onConfigChange = function () {};
+
+  function currentLayout() { return layoutSelect.value || "krutidev"; }
+  function currentDiff() { return diffSelect.value || "pro"; }
+  function currentPack() { return CONTENT[currentLayout()] || CONTENT.krutidev; }
+
+  function refreshKeyboard() {
+    const cfg = api.LAYOUT_MAPS[currentLayout()] || api.LAYOUT_MAPS.krutidev;
+    if (kbLayoutName) kbLayoutName.textContent = cfg.label;
+    if (backLink) backLink.href = `/games?layout=${encodeURIComponent(currentLayout())}`;
+    api.renderKeyboard(kbEl, currentLayout(), (ch) => {
+      if (ch === "BACKSPACE") onBackspace();
+      else onTypedChar(ch, null);
+    });
+  }
+
+  function saveGameResult(wpm, acc, chars) {
+    fetch("/api/progress", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        section: "games",
+        layout_id: currentLayout(),
+        level_or_set: `${ACTIVE_GAME}_${currentDiff()}`,
+        wpm: wpm,
+        accuracy: acc,
+        typed_chars: chars,
+        completed: true
+      })
+    }).catch(() => {});
+  }
+
+  /* =========================================================================
+     CONTROLLER 1: NITRO TYPE GP
+     ========================================================================= */
+  if (ACTIVE_GAME === "nitro-race") {
+    const raceStream = document.getElementById("race-stream");
+    const raceProgressFill = document.getElementById("race-progress-fill");
+    const raceWpmEl = document.getElementById("race-wpm");
+    const raceAccEl = document.getElementById("race-acc");
+    const racePosEl = document.getElementById("race-pos");
+    const raceStreakEl = document.getElementById("race-streak");
+    const raceStatusPill = document.getElementById("race-status-pill");
+    const raceLayoutBadge = document.getElementById("race-layout-badge");
+    const raceStartBtn = document.getElementById("race-start-btn");
+    const raceOverlay = document.getElementById("race-overlay");
+    const raceOverlayTitle = document.getElementById("race-overlay-title");
+    const raceOverlaySub = document.getElementById("race-overlay-sub");
+    const raceOverlayBtn = document.getElementById("race-overlay-btn");
+
+    const race = {
+      state: "idle", text: "", passageIdx: 0, cursor: 0, totalKeys: 0, errors: 0,
+      streak: 0, startedAt: null, countdownTimer: null, loopTimer: null, cars: []
+    };
+
+    const ordinal = (n) => (n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : "4th");
+    const stopTimers = () => {
+      if (race.countdownTimer) { clearInterval(race.countdownTimer); race.countdownTimer = null; }
+      if (race.loopTimer) { clearInterval(race.loopTimer); race.loopTimer = null; }
+    };
+
+    function updateCarsDOM() {
+      const myPct = race.cars[0].pct;
+      let rank = 1;
+      for (let i = 1; i < 4; i++) if (race.cars[i].pct > myPct) rank += 1;
+      racePosEl.textContent = `${ordinal(rank)} / 4`;
+
+      race.cars.forEach((c, idx) => {
+        const carEl = document.getElementById(`car-${idx}`);
+        const spdEl = document.getElementById(`racer-speed-${idx}`);
+        if (carEl) {
+          carEl.style.left = Math.min(92, Math.max(0, c.pct * 0.92)) + "%";
+          if (idx === 0) carEl.classList.toggle("boosting", race.streak >= 10 && race.state === "racing");
+        }
+        if (spdEl) spdEl.textContent = `${Math.round(c.wpm)} WPM`;
+      });
+    }
+
+    function renderRace() {
+      raceStream.innerHTML = "";
+      for (let i = 0; i < race.text.length; i++) {
+        const sp = document.createElement("span");
+        sp.className = "th-char";
+        if (i < race.cursor) sp.classList.add("correct");
+        else if (i === race.cursor && race.state !== "finished") sp.classList.add("active");
+        sp.textContent = race.text[i];
+        raceStream.appendChild(sp);
+      }
+      const pct = race.text.length ? Math.round((race.cursor / race.text.length) * 100) : 0;
+      raceProgressFill.style.width = pct + "%";
+      race.cars[0].pct = pct;
+
+      const elapsedMin = race.startedAt ? Math.max((Date.now() - race.startedAt) / 60000, 1 / 60) : 1 / 60;
+      const wpm = race.startedAt ? Math.round((race.cursor / 5) / elapsedMin) : 0;
+      const acc = race.totalKeys > 0 ? Math.max(0, Math.round(((race.totalKeys - race.errors) / race.totalKeys) * 100)) : 100;
+
+      race.cars[0].wpm = wpm;
+      raceWpmEl.textContent = `${wpm} WPM`;
+      raceAccEl.textContent = `${acc}%`;
+      raceStreakEl.textContent = `${race.streak}x`;
+      updateCarsDOM();
+      api.highlightNextChar(kbEl, currentLayout(), race.state === "finished" ? "" : race.text[race.cursor] || "");
+    }
+
+    function resetRace(nextPassage) {
+      stopTimers();
+      const pack = currentPack();
+      if (nextPassage) race.passageIdx = (race.passageIdx + 1) % pack.passages.length;
+      race.text = pack.passages[race.passageIdx % pack.passages.length];
+      race.state = "idle";
+      race.cursor = 0;
+      race.totalKeys = 0;
+      race.errors = 0;
+      race.streak = 0;
+      race.startedAt = null;
+
+      const speeds = BOT_SPEEDS[currentDiff()] || BOT_SPEEDS.pro;
+      race.cars = [
+        { pct: 0, wpm: 0, finishedAt: null },
+        { pct: 0, wpm: 0, targetWpm: speeds[0], finishedAt: null },
+        { pct: 0, wpm: 0, targetWpm: speeds[1], finishedAt: null },
+        { pct: 0, wpm: 0, targetWpm: speeds[2], finishedAt: null }
+      ];
+
+      const cfg = api.LAYOUT_MAPS[currentLayout()] || api.LAYOUT_MAPS.krutidev;
+      raceLayoutBadge.textContent = cfg.label;
+      raceStatusPill.textContent = "READY TO RACE";
+      raceOverlay.hidden = true;
+      raceOverlayBtn.style.display = "none";
+      renderRace();
+    }
+
+    function startCountdown() {
+      if (race.state === "countdown") return;
+      resetRace(false);
+      race.state = "countdown";
+      raceStatusPill.textContent = "STARTING...";
+      raceOverlay.hidden = false;
+      raceOverlayBtn.style.display = "none";
+
+      let count = 3;
+      raceOverlayTitle.className = "countdown-digit";
+      raceOverlayTitle.style.cssText = "";
+      raceOverlayTitle.textContent = String(count);
+      raceOverlaySub.textContent = "Fingers ready on Home Row...";
+      api.playClick(true);
+
+      race.countdownTimer = setInterval(() => {
+        count -= 1;
+        if (count > 0) {
+          raceOverlayTitle.textContent = String(count);
+          api.playClick(true);
+        } else if (count === 0) {
+          raceOverlayTitle.textContent = "GO!";
+          raceOverlaySub.textContent = "Type as fast as you can!";
+          api.playClick(true);
+        } else {
+          clearInterval(race.countdownTimer);
+          race.countdownTimer = null;
+          raceOverlay.hidden = true;
+          race.state = "racing";
+          race.startedAt = Date.now();
+          raceStatusPill.textContent = "RACE LIVE";
+          const totalChars = Math.max(race.text.length, 40);
+          race.loopTimer = setInterval(() => {
+            if (race.state !== "racing") return;
+            for (let i = 1; i < 4; i++) {
+              const bot = race.cars[i];
+              if (bot.pct < 100) {
+                const curWpm = bot.targetWpm * (0.85 + Math.random() * 0.3);
+                bot.wpm = curWpm;
+                bot.pct = Math.min(100, bot.pct + ((curWpm * 5 / 60) * 0.15 / totalChars) * 100);
+                if (bot.pct >= 100 && !bot.finishedAt) bot.finishedAt = Date.now();
+              }
+            }
+            renderRace();
+          }, 150);
+        }
+      }, 650);
+    }
+
+    function finishRace() {
+      stopTimers();
+      race.state = "finished";
+      race.cars[0].finishedAt = Date.now();
+      raceStatusPill.textContent = "FINISHED";
+
+      let rank = 1;
+      for (let i = 1; i < 4; i++) {
+        if (race.cars[i].finishedAt && race.cars[i].finishedAt < race.cars[0].finishedAt) rank += 1;
+      }
+
+      const wpm = Math.round(race.cars[0].wpm);
+      const acc = race.totalKeys > 0 ? Math.max(0, Math.round(((race.totalKeys - race.errors) / race.totalKeys) * 100)) : 100;
+
+      raceOverlay.hidden = false;
+      raceOverlayTitle.className = "";
+      raceOverlayTitle.style.cssText = "font-size:2rem; font-weight:900; color:#ffffff;";
+      raceOverlayTitle.textContent = rank === 1 ? "1st Place — Race Champion!" : `${ordinal(rank)} Place Finish!`;
+      raceOverlaySub.textContent = `Speed: ${wpm} WPM  •  Accuracy: ${acc}%`;
+      raceOverlayBtn.style.display = "inline-flex";
+      saveGameResult(wpm, acc, race.text.length);
+    }
+
+    onTypedChar = (ch, code) => {
+      if (race.state === "idle") { startCountdown(); return; }
+      if (race.state !== "racing") return;
+      race.totalKeys += 1;
+      if (ch === race.text[race.cursor]) {
+        race.cursor += 1;
+        race.streak += 1;
+        api.playClick(true);
+        api.flashKey(kbEl, code, true);
+        if (race.cursor >= race.text.length) { renderRace(); finishRace(); return; }
+      } else {
+        race.errors += 1;
+        race.streak = 0;
+        api.playClick(false);
+        api.flashKey(kbEl, code, false);
+      }
+      renderRace();
+    };
+
+    onBackspace = () => {
+      if (race.state === "racing" && race.cursor > 0) {
+        race.cursor -= 1;
+        renderRace();
+      }
+    };
+
+    onConfigChange = () => resetRace(false);
+    raceStartBtn.addEventListener("click", startCountdown);
+    raceOverlayBtn.addEventListener("click", () => { resetRace(true); startCountdown(); });
+
+    refreshKeyboard();
+    resetRace(false);
+  }
+
+  /* =========================================================================
+     CONTROLLER 2: METEOR DEFENSE
+     ========================================================================= */
+  if (ACTIVE_GAME === "meteor-defense") {
+    const meteorLayer = document.getElementById("meteor-layer");
+    const meteorLaserSvg = document.getElementById("meteor-laser-svg");
+    const meteorStage = document.getElementById("meteor-stage");
+    const meteorHeartsEl = document.getElementById("meteor-hearts");
+    const meteorScoreEl = document.getElementById("meteor-score");
+    const meteorWaveEl = document.getElementById("meteor-wave");
+    const meteorKillsEl = document.getElementById("meteor-kills");
+    const meteorAccEl = document.getElementById("meteor-acc");
+    const meteorOverlay = document.getElementById("meteor-overlay");
+    const meteorOverlayTitle = document.getElementById("meteor-overlay-title");
+    const meteorOverlaySub = document.getElementById("meteor-overlay-sub");
+    const meteorOverlayBtn = document.getElementById("meteor-overlay-btn");
+    const meteorStartBtn = document.getElementById("meteor-start-btn");
+
+    const m = { running: false, rafId: null, spawnTimer: null, items: [], lockedId: null, nextId: 1, hearts: 3, score: 0, kills: 0, wave: 1, hits: 0, misses: 0 };
+
+    const stopMeteor = () => {
+      m.running = false;
+      if (m.rafId) { cancelAnimationFrame(m.rafId); m.rafId = null; }
+      if (m.spawnTimer) { clearInterval(m.spawnTimer); m.spawnTimer = null; }
+    };
+
+    function updateHud() {
+      meteorScoreEl.textContent = String(m.score);
+      meteorWaveEl.textContent = String(m.wave);
+      meteorKillsEl.textContent = String(m.kills);
+      const total = m.hits + m.misses;
+      meteorAccEl.textContent = (total > 0 ? Math.round((m.hits / total) * 100) : 100) + "%";
+      meteorHeartsEl.innerHTML = Array.from({ length: 3 }, (_, i) =>
+        `<span style="opacity:${i < m.hearts ? 1 : 0.22};">&#10084;</span>`
+      ).join(" ");
+    }
+
+    function renderItem(item) {
+      item.el.classList.toggle("locked", item.id === m.lockedId);
+      item.el.style.left = item.xPct + "%";
+      item.el.style.top = item.y + "px";
+      item.el.innerHTML =
+        `<span class="meteor-done">${item.word.slice(0, item.matched)}</span>` +
+        `<span class="meteor-next">${item.word[item.matched] || ""}</span>` +
+        `<span class="meteor-rest">${item.word.slice(item.matched + 1)}</span>`;
+    }
+
+    function updateNextKey() {
+      if (!m.running) return;
+      let target = m.items.find((x) => x.id === m.lockedId);
+      if (!target && m.items.length > 0) target = m.items.reduce((a, b) => (a.y > b.y ? a : b));
+      api.highlightNextChar(kbEl, currentLayout(), target ? target.word[target.matched] : "");
+    }
+
+    function spawnMeteor() {
+      if (!m.running || m.items.length >= 4) return;
+      const words = currentPack().words;
+      const word = words[Math.floor(Math.random() * words.length)];
+      const el = document.createElement("div");
+      el.className = "meteor-node";
+      meteorLayer.appendChild(el);
+      const item = {
+        id: m.nextId++, word, matched: 0, xPct: 15 + Math.random() * 70, y: 34,
+        speed: (METEOR_SPEED[currentDiff()] || 0.65) + (m.wave - 1) * 0.12, el
+      };
+      m.items.push(item);
+      renderItem(item);
+      updateNextKey();
+    }
+
+    function fireLaser(item) {
+      const rect = meteorStage.getBoundingClientRect();
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", rect.width / 2);
+      line.setAttribute("y1", rect.height - 34);
+      line.setAttribute("x2", (item.xPct / 100) * rect.width);
+      line.setAttribute("y2", item.y + 18);
+      line.setAttribute("stroke", "#38bdf8");
+      line.setAttribute("stroke-width", "3");
+      line.setAttribute("stroke-linecap", "round");
+      meteorLaserSvg.appendChild(line);
+      setTimeout(() => line.remove(), 110);
+    }
+
+    function tick() {
+      if (!m.running) return;
+      const limitY = meteorStage.clientHeight - 54;
+      for (let i = m.items.length - 1; i >= 0; i--) {
+        const item = m.items[i];
+        item.y += item.speed;
+        item.el.style.top = item.y + "px";
+        if (item.y >= limitY) {
+          item.el.remove();
+          m.items.splice(i, 1);
+          if (m.lockedId === item.id) m.lockedId = null;
+          m.hearts -= 1;
+          api.playClick(false);
+          updateHud();
+          if (m.hearts <= 0) {
+            stopMeteor();
+            const total = m.hits + m.misses;
+            const acc = total > 0 ? Math.round((m.hits / total) * 100) : 100;
+            meteorOverlay.hidden = false;
+            meteorOverlayTitle.textContent = "Shield Breached!";
+            meteorOverlaySub.textContent = `Score: ${m.score}  •  Words Destroyed: ${m.kills}  •  Wave ${m.wave}`;
+            meteorOverlayBtn.textContent = "Defend Again →";
+            saveGameResult(m.kills * 3, acc, m.hits);
+            return;
+          }
+        }
+      }
+      updateNextKey();
+      m.rafId = requestAnimationFrame(tick);
+    }
+
+    function startMeteor() {
+      stopMeteor();
+      meteorLayer.innerHTML = "";
+      meteorLaserSvg.innerHTML = "";
+      Object.assign(m, { running: true, items: [], lockedId: null, hearts: 3, score: 0, kills: 0, wave: 1, hits: 0, misses: 0 });
+      meteorOverlay.hidden = true;
+      updateHud();
+      spawnMeteor();
+      m.spawnTimer = setInterval(spawnMeteor, 2100);
+      m.rafId = requestAnimationFrame(tick);
+    }
+
+    onTypedChar = (ch, code) => {
+      if (!m.running) return;
+      let target = m.items.find((x) => x.id === m.lockedId);
+      if (!target) {
+        const matches = m.items.filter((x) => x.word[0] === ch);
+        if (matches.length) {
+          target = matches.reduce((a, b) => (a.y > b.y ? a : b));
+          m.lockedId = target.id;
+        }
+      }
+      if (target && target.word[target.matched] === ch) {
+        target.matched += 1;
+        m.hits += 1;
+        api.playClick(true);
+        api.flashKey(kbEl, code, true);
+        fireLaser(target);
+        if (target.matched >= target.word.length) {
+          target.el.remove();
+          m.items = m.items.filter((x) => x.id !== target.id);
+          m.lockedId = null;
+          m.kills += 1;
+          m.score += 20 * m.wave;
+          m.wave = 1 + Math.floor(m.kills / 8);
+          if (m.items.length === 0) spawnMeteor();
+        } else {
+          renderItem(target);
+        }
+      } else {
+        m.misses += 1;
+        api.playClick(false);
+        api.flashKey(kbEl, code, false);
+      }
+      updateHud();
+      updateNextKey();
+    };
+
+    onConfigChange = () => {
+      stopMeteor();
+      meteorLayer.innerHTML = "";
+      meteorOverlay.hidden = false;
+      meteorOverlayTitle.textContent = "Meteor Defense";
+      meteorOverlayBtn.textContent = "Start Wave 1 →";
+      updateHud();
+    };
+
+    meteorStartBtn.addEventListener("click", startMeteor);
+    meteorOverlayBtn.addEventListener("click", startMeteor);
+    refreshKeyboard();
+    updateHud();
+  }
+
+  /* =========================================================================
+     CONTROLLER 3: SPEED TUG-OF-WAR
+     ========================================================================= */
+  if (ACTIVE_GAME === "tug-of-war") {
+    const tugFill = document.getElementById("tug-fill");
+    const tugKnot = document.getElementById("tug-knot");
+    const tugMeterVal = document.getElementById("tug-meter-val");
+    const tugWordsVal = document.getElementById("tug-words-val");
+    const tugStreakVal = document.getElementById("tug-streak-val");
+    const tugWinsVal = document.getElementById("tug-wins-val");
+    const tugQueueEl = document.getElementById("tug-queue");
+    const tugActiveWord = document.getElementById("tug-active-word");
+    const tugStatusText = document.getElementById("tug-status-text");
+    const tugStartBtn = document.getElementById("tug-start-btn");
+    const tugOverlay = document.getElementById("tug-overlay");
+    const tugOverlayTitle = document.getElementById("tug-overlay-title");
+    const tugOverlaySub = document.getElementById("tug-overlay-sub");
+    const tugOverlayBtn = document.getElementById("tug-overlay-btn");
+
+    const t = { running: false, timer: null, meter: 50, wordsCleared: 0, streak: 0, wins: 0, wordIdx: 0, charIdx: 0, totalKeys: 0, goodKeys: 0 };
+
+    const stopTug = () => {
+      t.running = false;
+      if (t.timer) { clearInterval(t.timer); t.timer = null; }
+    };
+
+    function renderTug() {
+      const list = currentPack().words;
+      const word = list[t.wordIdx % list.length];
+      const pct = Math.min(100, Math.max(0, t.meter));
+      tugFill.style.width = pct + "%";
+      tugKnot.style.left = pct + "%";
+      tugMeterVal.textContent = Math.round(pct) + "%";
+      tugWordsVal.textContent = String(t.wordsCleared);
+      tugStreakVal.textContent = t.streak + "x";
+      tugWinsVal.textContent = String(t.wins);
+
+      tugQueueEl.innerHTML = "";
+      for (let i = 1; i <= 4; i++) {
+        const chip = document.createElement("span");
+        chip.textContent = list[(t.wordIdx + i) % list.length];
+        chip.style.cssText = "padding:3px 10px; border-radius:999px; font-size:0.82rem; font-weight:600; background:var(--bg-subtle); border:1px solid var(--border); color:var(--text-muted);";
+        tugQueueEl.appendChild(chip);
+      }
+
+      tugActiveWord.innerHTML = "";
+      for (let i = 0; i < word.length; i++) {
+        const sp = document.createElement("span");
+        sp.textContent = word[i];
+        if (i < t.charIdx) sp.style.color = "var(--emerald)";
+        else if (i === t.charIdx) sp.style.color = "var(--primary)";
+        else sp.style.color = "var(--text-muted)";
+        tugActiveWord.appendChild(sp);
+      }
+      api.highlightNextChar(kbEl, currentLayout(), word[t.charIdx] || "");
+    }
+
+    function finishDuel(won) {
+      stopTug();
+      if (won) t.wins += 1;
+      const acc = t.totalKeys > 0 ? Math.round((t.goodKeys / t.totalKeys) * 100) : 100;
+      tugOverlay.hidden = false;
+      tugOverlayTitle.textContent = won ? "You Won the Duel!" : "Rival Bot Pulled You In!";
+      tugOverlaySub.textContent = `Words Cleared: ${t.wordsCleared}  •  Accuracy: ${acc}%  •  Total Wins: ${t.wins}`;
+      renderTug();
+      saveGameResult(t.wordsCleared * 5, acc, t.goodKeys);
+    }
+
+    function startDuel() {
+      stopTug();
+      Object.assign(t, { running: true, meter: 50, wordsCleared: 0, streak: 0, charIdx: 0, totalKeys: 0, goodKeys: 0 });
+      t.wordIdx = Math.floor(Math.random() * currentPack().words.length);
+      tugOverlay.hidden = true;
+      tugStatusText.textContent = "Duel LIVE — Type continuously to overpower the Rival Bot!";
+      renderTug();
+
+      const pullPerTick = (TUG_PULL_PER_SEC[currentDiff()] || 7.5) * 0.1;
+      t.timer = setInterval(() => {
+        if (!t.running) return;
+        t.meter = Math.max(0, t.meter - pullPerTick);
+        renderTug();
+        if (t.meter <= 0) finishDuel(false);
+      }, 100);
+    }
+
+    onTypedChar = (ch, code) => {
+      if (!t.running) { startDuel(); return; }
+      const list = currentPack().words;
+      const word = list[t.wordIdx % list.length];
+      t.totalKeys += 1;
+      if (ch === word[t.charIdx]) {
+        t.goodKeys += 1;
+        t.charIdx += 1;
+        t.streak += 1;
+        t.meter = Math.min(100, t.meter + 3.4);
+        api.playClick(true);
+        api.flashKey(kbEl, code, true);
+        if (t.charIdx >= word.length) {
+          t.wordsCleared += 1;
+          t.wordIdx = (t.wordIdx + 1) % list.length;
+          t.charIdx = 0;
+          t.meter = Math.min(100, t.meter + 2.5);
+        }
+        if (t.meter >= 100) { finishDuel(true); return; }
+      } else {
+        t.streak = 0;
+        t.meter = Math.max(0, t.meter - 2);
+        api.playClick(false);
+        api.flashKey(kbEl, code, false);
+      }
+      renderTug();
+    };
+
+    onConfigChange = () => {
+      stopTug();
+      t.meter = 50;
+      t.charIdx = 0;
+      tugOverlay.hidden = true;
+      renderTug();
+    };
+
+    tugStartBtn.addEventListener("click", startDuel);
+    tugOverlayBtn.addEventListener("click", startDuel);
+    refreshKeyboard();
+    renderTug();
+  }
+
+  /* =========================================================================
+     SHARED CONTROLS & KEYBOARD LISTENER
+     ========================================================================= */
+  layoutSelect.addEventListener("change", () => {
+    layoutSelect.blur();
+    refreshKeyboard();
+    onConfigChange();
+  });
+
+  diffSelect.addEventListener("change", () => {
+    diffSelect.blur();
+    onConfigChange();
+  });
+
+  kbToggleBtn.addEventListener("click", () => {
+    kbVisible = !kbVisible;
+    kbShell.style.display = kbVisible ? "block" : "none";
+    kbToggleBtn.textContent = kbVisible ? "Hide Key Guide" : "Show Key Guide";
+  });
+
+  window.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.altKey || e.metaKey || e.key === "Shift") return;
+    if (document.activeElement && document.activeElement.tagName === "SELECT") return;
+    if (e.key === "Backspace") { e.preventDefault(); onBackspace(); return; }
+    if (e.code === "Space") { e.preventDefault(); onTypedChar(" ", "Space"); return; }
+    const mapped = api.mapKey(currentLayout(), e.code, e.shiftKey);
+    if (mapped) { e.preventDefault(); onTypedChar(mapped, e.code); }
+  });
+})();
+</script>
+{% endblock %}

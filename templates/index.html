@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Hero Split Section -->
+<section class="th-hero-grid">
+  <div>
+    <div class="th-eyebrow">Built for Speed, Accuracy &amp; Court Exams</div>
+    <h1 class="th-hero-title">
+      Master Hindi Typing with <span class="th-hero-accent">Exam-Grade Precision.</span>
+    </h1>
+    <p class="th-hero-copy">
+      Practice Kruti Dev 010, InScript (Mangal), Remington Gail (Court / Ubuntu), Vedmata, and TypeScript directly in your browser. Start immediately in Guest Mode—no downloads or forced sign-ups.
+    </p>
+
+    <div class="th-hero-cta">
+      <a href="/practice" class="th-btn th-btn-primary th-btn-lg">
+        <span>Launch Practice Arena</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14M12 5l7 7-7 7"></path>
+        </svg>
+      </a>
+      <a href="/learn" class="th-btn th-btn-lg">Guided Lessons</a>
+      <a href="/games" class="th-btn th-btn-ghost th-btn-lg">Typing Games</a>
+    </div>
+
+    <div class="th-hero-meta">
+      <div><strong>5+</strong> Hindi Layouts</div>
+      <div><strong>100%</strong> Browser-Native</div>
+      <div><strong>Zero</strong> Login Friction</div>
+      <div><strong>Real-Time</strong> WPM &amp; Accuracy</div>
+    </div>
+  </div>
+
+  <!-- Live Interactive Mini Preview Window -->
+  <div class="th-preview-window">
+    <div class="th-window-bar">
+      <div class="th-window-dots">
+        <span></span><span></span><span></span>
+      </div>
+      <span>Live Engine Preview &middot; InScript / Mangal</span>
+      <span style="color:var(--emerald);">Ready</span>
+    </div>
+    <div class="th-preview-body">
+      <div style="display:flex; justify-content:space-between; font-size:0.78rem; color:var(--text-muted); margin-bottom:10px; font-weight:600;">
+        <span>REAL-TIME DIFF ENGINE</span>
+        <span style="color:var(--primary); font-family:'JetBrains Mono',monospace;">42 WPM &middot; 98% ACC</span>
+      </div>
+      <div style="padding:16px; border-radius:12px; background:var(--bg-subtle); border:1px solid var(--border); font-family:'Noto Sans Devanagari',sans-serif; font-size:1.25rem; line-height:1.9;">
+        <span class="th-char correct">भारत एक विशाल </span><span class="th-char active">दे</span><span class="th-char">श है। नियमित अभ्यास से गति और शुद्धता दोनों बढ़ती हैं।</span>
+      </div>
+      <div class="th-progress-track" style="margin-top:14px;">
+        <div class="th-progress-fill" style="width:44%;"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:14px; font-size:0.8rem; color:var(--text-muted);">
+        <span>Zero-latency key mapping</span>
+        <a href="/practice?layout=remington_gail" style="color:var(--primary); font-weight:700; text-decoration:none;">Try Court Mode &rarr;</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Supported Layouts Grid -->
+<section style="margin-top:12px;">
+  <div class="th-section-head">
+    <div>
+      <h2 class="th-page-title" style="font-size:1.35rem;">Choose Your Keyboard Layout</h2>
+      <p class="th-page-subtitle">Jump directly into any layout with built-in key remapping and an on-screen visual keyboard.</p>
+    </div>
+  </div>
+
+  <div class="th-grid-5">
+    {% for item in available_layouts %}
+    <a href="/practice?layout={{ item.id }}" class="th-layout-card">
+      <div>
+        <span class="th-layout-tag">{{ item.category }}</span>
+        <h3 style="margin:10px 0 6px; font-size:1rem; font-weight:700;">{{ item.name }}</h3>
+        <p style="margin:0; font-size:0.82rem; color:var(--text-secondary);">{{ item.exam_note }}</p>
+      </div>
+      <span style="font-size:0.82rem; font-weight:700; color:var(--primary);">Open Layout &rarr;</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Capabilities Bento Grid -->
+<section style="margin-top:34px;">
+  <div class="th-grid-3">
+    <div class="th-card">
+      <div class="th-feature-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+      </div>
+      <h3 style="margin:0 0 6px; font-size:1.05rem;">Court &amp; Govt Exam Simulator</h3>
+      <p style="margin:0; font-size:0.88rem; color:var(--text-secondary);">
+        Configure 1 to 10-minute exam timers, strict backspace locks, and real-time Gross/Net WPM metrics built for CPCT, SSC, and Court tests.
+      </p>
+    </div>
+
+    <div class="th-card">
+      <div class="th-feature-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+          <path d="M2 17l10 5 10-5"></path>
+          <path d="M2 12l10 5 10-5"></path>
+        </svg>
+      </div>
+      <h3 style="margin:0 0 6px; font-size:1.05rem;">Structured Lessons &amp; Games</h3>
+      <p style="margin:0; font-size:0.88rem; color:var(--text-secondary);">
+        Build muscle memory from Home Row foundations to full passages without panic timers, guided by an interactive 3D visual keyboard.
+      </p>
+    </div>
+
+    <div class="th-card">
+      <div class="th-feature-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+      </div>
+      <h3 style="margin:0 0 6px; font-size:1.05rem;">Guest-First, Optional Sync</h3>
+      <p style="margin:0; font-size:0.88rem; color:var(--text-secondary);">
+        Every layout and mode is open in Guest Mode. Sign in anytime only if you want to store your speed history and preferred layout.
+      </p>
+    </div>
+  </div>
+</section>
+{% endblock %}

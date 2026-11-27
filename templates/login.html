@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="th-auth-shell">
+  {% if active_user %}
+  <!-- Signed-In Analytics Summary -->
+  <div class="th-section-head">
+    <div>
+      <h1 class="th-page-title">Welcome back, {{ active_user.display_name }}</h1>
+      <p class="th-page-subtitle">Your typing metrics and preferred keyboard layout are synced to this profile.</p>
+    </div>
+    <form method="post" action="{{ url_for('logout') }}" style="margin:0;">
+      <button type="submit" class="th-btn">Switch to Guest Mode</button>
+    </form>
+  </div>
+
+  <div class="th-kpi-strip" style="grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom:22px;">
+    <div class="th-kpi-box">
+      <span class="th-kpi-label">Saved Sessions</span>
+      <span class="th-kpi-value accent">{{ stats.sessions }}</span>
+    </div>
+    <div class="th-kpi-box">
+      <span class="th-kpi-label">Best Speed</span>
+      <span class="th-kpi-value good">{{ stats.best_wpm }} WPM</span>
+    </div>
+    <div class="th-kpi-box">
+      <span class="th-kpi-label">Average Accuracy</span>
+      <span class="th-kpi-value">{{ stats.avg_accuracy }}%</span>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Large Split-Panel Account & Progress Card -->
+  <section class="th-auth-card">
+    <!-- Left Value Panel -->
+    <div class="th-auth-aside">
+      <div>
+        <span class="th-auth-badge">Optional Cloud Profile</span>
+        <h1>Account &amp; Progress Sync</h1>
+        <p>
+          Keep every WPM milestone, exam report, and keyboard layout preference saved in one place—while keeping full Guest access open anytime.
+        </p>
+      </div>
+
+      <ul class="th-auth-perks">
+        <li>
+          <span class="th-auth-check" aria-hidden="true">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </span>
+          <span><strong>Auto-load your layout:</strong> Start directly in Kruti Dev 010, InScript (Mangal), Remington Gail, Vedmata, or TypeScript.</span>
+        </li>
+        <li>
+          <span class="th-auth-check" aria-hidden="true">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </span>
+          <span><strong>Track exam readiness:</strong> Log Net WPM, accuracy trends, and completed drills for Court and Govt typing tests.</span>
+        </li>
+        <li>
+          <span class="th-auth-check" aria-hidden="true">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </span>
+          <span><strong>Zero paywalls:</strong> 100% free and ad-supported—switch back to Guest Mode whenever you prefer.</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Right Focused Form Panel -->
+    <div class="th-auth-form-pane">
+      <h2 class="th-auth-form-title">
+        {% if active_user %}Profile Settings{% else %}Sign In or Create Profile{% endif %}
+      </h2>
+      <p class="th-auth-form-sub">
+        Enter an identifier below to sync your sessions in seconds. No password required.
+      </p>
+
+      {% if error %}
+        <div style="padding:11px 14px; border-radius:10px; background:var(--rose-soft); color:var(--rose); border:1px solid var(--rose-border); font-size:0.86rem; font-weight:600; margin-bottom:18px;">
+          {{ error }}
+        </div>
+      {% endif %}
+
+      <form method="post" action="{{ url_for('login') }}" class="th-field-stack">
+        <div>
+          <label for="user-identifier" class="th-field-label">Mobile, Email, or Username *</label>
+          <input
+            id="user-identifier"
+            name="identifier"
+            type="text"
+            class="th-input th-input-lg"
+            required
+            value="{{ active_user.identifier if active_user else '' }}"
+            placeholder="e.g. rahul@typohub.in or 98XXXXXXXX"
+          />
+        </div>
+
+        <div>
+          <label for="display-name" class="th-field-label">Display Name</label>
+          <input
+            id="display-name"
+            name="display_name"
+            type="text"
+            class="th-input th-input-lg"
+            value="{{ active_user.display_name if active_user else '' }}"
+            placeholder="Your full name"
+          />
+        </div>
+
+        <div>
+          <label for="preferred-layout" class="th-field-label">Default Keyboard Layout</label>
+          <select id="preferred-layout" name="preferred_layout" class="th-select th-select-lg">
+            {% for item in available_layouts %}
+              <option value="{{ item.id }}" {% if active_user and active_user.preferred_layout == item.id %}selected{% endif %}>
+                {{ item.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="th-auth-actions">
+          <button type="submit" class="th-btn th-btn-primary">
+            {% if active_user %}Update Profile &amp; Layout{% else %}Save &amp; Sign In &rarr;{% endif %}
+          </button>
+          <a href="/practice" class="th-btn">Continue as Guest</a>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  {% if recent_progress %}
+  <div class="th-card" style="margin-top:24px;">
+    <h2 style="margin:0 0 12px; font-size:1.05rem;">Recent Saved Sessions</h2>
+    <div style="overflow-x:auto;">
+      <table class="th-table">
+        <thead>
+          <tr>
+            <th>Mode</th>
+            <th>Layout</th>
+            <th>Preset</th>
+            <th>Speed</th>
+            <th>Accuracy</th>
+            <th>Characters</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in recent_progress %}
+          <tr>
+            <td style="text-transform:capitalize; font-weight:600;">{{ row.section }}</td>
+            <td>{{ row.layout_id }}</td>
+            <td>{{ row.level_or_set }}</td>
+            <td style="font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--primary);">{{ row.wpm|round|int }} WPM</td>
+            <td style="font-family:'JetBrains Mono',monospace;">{{ row.accuracy|round|int }}%</td>
+            <td style="font-family:'JetBrains Mono',monospace;">{{ row.typed_chars }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="th-section-head">
+  <div>
+    <h1 class="th-page-title">Practice &amp; Exam Arena</h1>
+    <p class="th-page-subtitle">Click the typing box and start typing—your physical keyboard is mapped automatically to the selected layout.</p>
+  </div>
+  <div class="th-toolbar-group">
+    <button type="button" id="sound-toggle-btn" class="th-btn" title="Toggle Key Sound">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+      </svg>
+      <span id="sound-btn-label">Sound On</span>
+    </button>
+    <button type="button" id="restart-session-btn" class="th-btn">Restart</button>
+    <button type="button" id="save-session-btn" class="th-btn th-btn-primary">Save Result</button>
+  </div>
+</div>
+
+<!-- Configuration Toolbar -->
+<div class="th-toolbar">
+  <div class="th-toolbar-group">
+    <label for="layout-select" style="font-size:0.8rem; font-weight:700; color:var(--text-muted);">LAYOUT</label>
+    <select id="layout-select" class="th-select">
+      {% for item in available_layouts %}
+        <option value="{{ item.id }}" {% if initial_layout == item.id %}selected{% endif %}>{{ item.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="th-toolbar-group">
+    <div class="th-seg-control" role="group" aria-label="Session Mode">
+      <button type="button" class="th-seg-btn active" data-mode="practice">Free Practice</button>
+      <button type="button" class="th-seg-btn" data-mode="exam">Exam Mode</button>
+    </div>
+
+    <select id="duration-select" class="th-select" aria-label="Exam Duration">
+      <option value="60">1 Min</option>
+      <option value="180">3 Min</option>
+      <option value="300" selected>5 Min</option>
+      <option value="600">10 Min</option>
+    </select>
+
+    <select id="backspace-select" class="th-select" aria-label="Backspace Rule">
+      <option value="enabled">Backspace: On</option>
+      <option value="disabled">Backspace: Locked (Strict)</option>
+    </select>
+  </div>
+</div>
+
+<!-- Live KPI Metrics Strip -->
+<div class="th-kpi-strip">
+  <div class="th-kpi-box">
+    <span class="th-kpi-label">Net WPM</span>
+    <span id="wpm-count" class="th-kpi-value accent">0</span>
+  </div>
+  <div class="th-kpi-box">
+    <span class="th-kpi-label">Accuracy</span>
+    <span id="accuracy-count" class="th-kpi-value good">100%</span>
+  </div>
+  <div class="th-kpi-box">
+    <span class="th-kpi-label">Timer</span>
+    <span id="timer-count" class="th-kpi-value">No Limit</span>
+  </div>
+  <div class="th-kpi-box">
+    <span class="th-kpi-label">Characters</span>
+    <span id="typed-count" class="th-kpi-value">0</span>
+  </div>
+  <div class="th-kpi-box">
+    <span class="th-kpi-label">Errors</span>
+    <span id="error-count" class="th-kpi-value warn">0</span>
+  </div>
+</div>
+
+<!-- Interactive Live Typing Canvas (No raw textarea) -->
+<div id="typing-canvas" class="th-typing-canvas" tabindex="0" role="textbox" aria-label="Typing Practice Area">
+  <input id="typing-hidden-input" class="th-hidden-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+  <div id="typing-stream" class="th-text-stream"></div>
+
+  <div class="th-progress-track">
+    <div id="typing-progress-fill" class="th-progress-fill"></div>
+  </div>
+
+  <div class="th-canvas-footer">
+    <span>Active Layout: <strong id="active-layout-label" style="color:var(--text);">Kruti Dev (010)</strong></span>
+    <span id="session-status">Click canvas and start typing</span>
+  </div>
+</div>
+
+<!-- Full Staggered 3D Visual Keyboard -->
+<div class="th-kb-shell">
+  <div class="th-kb-head">
+    <span><strong style="color:var(--text);">Visual Keyboard</strong> &middot; <span id="vk-layout-name">Kruti Dev (010)</span></span>
+    <span>Top-left = Physical Key &middot; Top-right = Shift &middot; Center = Normal</span>
+  </div>
+  <div id="visual-layout-keyboard" class="th-kb-rows"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/keyboard-engine.js') }}"></script>
+{% endblock %}
